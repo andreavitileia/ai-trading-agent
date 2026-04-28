@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Trading Agent - MiroFish Swarm Intelligence</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        body { font-family: 'Inter', sans-serif; background: #0a0e17; color: #e2e8f0; }
+        .glass { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(16px); border: 1px solid rgba(148, 163, 184, 0.1); }
+        .glass-accent { background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.2); }
+        .glow-green { box-shadow: 0 0 20px rgba(34, 197, 94, 0.3); }
+        .glow-red { box-shadow: 0 0 20px rgba(239, 68, 68, 0.3); }
+        .glow-blue { box-shadow: 0 0 20px rgba(59, 130, 246, 0.3); }
+        .pulse-dot { animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .signal-card:hover { transform: translateY(-2px); transition: all 0.3s; }
+        .gradient-text { background: linear-gradient(135deg, #3b82f6, #8b5cf6, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .scrollbar-thin::-webkit-scrollbar { width: 4px; }
+        .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+        .scrollbar-thin::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.3); border-radius: 2px; }
+        .loading-spinner { border: 3px solid rgba(59, 130, 246, 0.2); border-top-color: #3b82f6; border-radius: 50%; width: 24px; height: 24px; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .bar-fill { transition: width 1s ease-out; }
+    </style>
+</head>
+<body class="min-h-screen">
+    <div class="max-w-7xl mx-auto px-4 py-6">
+
+        <!-- Header -->
+        <header class="flex items-center justify-between mb-8">
+            <div>
+                <h1 class="text-3xl font-800 gradient-text">AI Trading Agent</h1>
+                <p class="text-slate-400 text-sm mt-1">MiroFish Swarm Intelligence + Claude AI</p>
+            </div>
+            <div class="flex items-center gap-4">
+                <div id="status-badge" class="glass px-4 py-2 rounded-full flex items-center gap-2 text-sm">
+                    <span class="w-2 h-2 rounded-full bg-green-400 pulse-dot"></span>
+                    <span class="text-slate-300">Sistema attivo</span>
+                </div>
+                <button onclick="runAnalysis()" id="run-btn"
+                    class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-600 text-sm transition-all flex items-center gap-2">
+                    <i data-lucide="play" class="w-4 h-4"></i>
+                    Avvia Analisi Swarm
+                </button>
+            </div>
+        </header>
+
+        <!-- Market Overview -->
+        <section class="mb-8">
+            <h2 class="text-lg font-600 text-slate-300 mb-4 flex items-center gap-2">
+                <i data-lucide="trending-up" class="w-5 h-5 text-blue-400"></i>
+                Panoramica Mercato
+            </h2>
+            <div id="market-grid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+                <!-- Populated by JS -->
+            </div>
+        </section>
+
+        <!-- Main Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+            <!-- Signals Column (2/3) -->
+            <div class="lg:col-span-2 space-y-6">
+
+                <!-- Trading Signals -->
+                <section class="glass rounded-2xl p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-lg font-600 flex items-center gap-2">
+                            <i data-lucide="target" class="w-5 h-5 text-yellow-400"></i>
+                            Segnali di Trading
+                        </h2>
+                        <span id="signal-count" class="text-sm text-slate-400">Nessun segnale</span>
+                    </div>
+                    <div id="signals-container" class="space-y-4">
+                        <div class="text-center py-12 text-slate-500">
+                            <i data-lucide="radar" class="w-12 h-12 mx-auto mb-3 opacity-50"></i>
+                            <p>Premi "Avvia Analisi Swarm" per generare segnali</p>
+                            <p class="text-xs mt-1">12 analisti AI analizzeranno il mercato in tempo reale</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Swarm Analysis Summary -->
+                <section class="glass rounded-2xl p-6">
+                    <h2 class="text-lg font-600 mb-4 flex items-center gap-2">
+                        <i data-lucide="brain" class="w-5 h-5 text-purple-400"></i>
+                        Analisi Swarm - Consenso
+                    </h2>
+                    <div id="consensus-container">
+                        <p class="text-slate-500 text-sm">Esegui l'analisi swarm per vedere il consenso degli agenti</p>
+                    </div>
+                </section>
+
+                <!-- Chat -->
+                <section class="glass rounded-2xl p-6">
+                    <h2 class="text-lg font-600 mb-4 flex items-center gap-2">
+                        <i data-lucide="message-circle" class="w-5 h-5 text-green-400"></i>
+                        Chiedi all'AI
+                    </h2>
+                    <div id="chat-messages" class="space-y-3 max-h-80 overflow-y-auto scrollbar-thin mb-4">
+                    </div>
+                    <div class="flex gap-2">
+                        <input id="chat-input" type="text" placeholder="Es: Cosa pensi del settore tech oggi?"
+                            class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                            onkeypress="if(event.key==='Enter')sendChat()">
+                        <button onclick="sendChat()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm">
+                            Invia
+                        </button>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Right Column (1/3) -->
+            <div class="space-y-6">
+
+                <!-- Portfolio Status -->
+                <section class="glass rounded-2xl p-6">
+                    <h2 class="text-lg font-600 mb-4 flex items-center gap-2">
+                        <i data-lucide="wallet" class="w-5 h-5 text-emerald-400"></i>
+                        Portfolio
+                    </h2>
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                            <span class="text-slate-400 text-sm">Capitale</span>
+                            <span class="text-xl font-700 text-white" id="capital-display">€3.000</span>
+                        </div>
+                        <div id="allocation-bars" class="space-y-2">
+                            <!-- Filled by JS -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- News Feed -->
+                <section class="glass rounded-2xl p-6">
+                    <h2 class="text-lg font-600 mb-4 flex items-center gap-2">
+                        <i data-lucide="newspaper" class="w-5 h-5 text-orange-400"></i>
+                        News Feed
+                    </h2>
+                    <div id="news-container" class="space-y-3 max-h-96 overflow-y-auto scrollbar-thin">
+                        <p class="text-slate-500 text-sm">Caricamento notizie...</p>
+                    </div>
+                </section>
+
+                <!-- Swarm Agents -->
+                <section class="glass rounded-2xl p-6">
+                    <h2 class="text-lg font-600 mb-4 flex items-center gap-2">
+                        <i data-lucide="users" class="w-5 h-5 text-cyan-400"></i>
+                        Agenti Swarm
+                    </h2>
+                    <div id="agents-container" class="space-y-2">
+                        <!-- Filled by JS -->
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        <!-- Disclaimer -->
+        <footer class="mt-8 text-center text-xs text-slate-600 py-4">
+            <p>DISCLAIMER: Questo sistema e' solo a scopo informativo e didattico. Non costituisce consulenza finanziaria.</p>
+            <p>Le performance passate non garantiscono risultati futuri. Investire comporta rischi di perdita del capitale.</p>
+        </footer>
+    </div>
+
+    <script>
+    const API = '';  // Same origin
+
+    // ---- Market Overview ----
+    async function loadMarket() {
+        try {
+            const r = await fetch(`${API}/api/market/summary`);
+            const d = await r.json();
+            const grid = document.getElementById('market-grid');
+            grid.innerHTML = '';
+            for (const [ticker, info] of Object.entries(d.data || {})) {
+                const up = info.change_pct >= 0;
+                grid.innerHTML += `
+                    <div class="glass rounded-xl p-3 ${up ? '' : ''} signal-card cursor-pointer"
+                         onclick="loadTickerDetail('${ticker}')">
+                        <div class="text-xs text-slate-400 font-500">${ticker}</div>
+                        <div class="text-lg font-700 mt-1">$${info.price}</div>
+                        <div class="text-sm font-600 ${up ? 'text-green-400' : 'text-red-400'}">
+                            ${up ? '+' : ''}${info.change_pct}%
+                        </div>
+                    </div>`;
+            }
+        } catch(e) { console.error('Market load error:', e); }
+    }
+
+    // ---- Signals ----
+    async function loadSignals() {
+        try {
+            const r = await fetch(`${API}/api/signals`);
+            const d = await r.json();
+            const container = document.getElementById('signals-container');
+            const count = document.getElementById('signal-count');
+
+            if (!d.signals || d.signals.length === 0) return;
+
+            count.textContent = `${d.signals.length} segnali attivi`;
+            container.innerHTML = '';
+
+            for (const s of d.signals) {
+                const isLong = s.direction === 'LONG';
+                const dirColor = isLong ? 'green' : 'red';
+                const dirIcon = isLong ? 'trending-up' : 'trending-down';
+                const convPct = Math.round(s.conviction * 100);
+                const rrDisplay = s.risk_reward_ratio || '?';
+
+                container.innerHTML += `
+                    <div class="glass-accent rounded-xl p-4 signal-card ${isLong ? 'glow-green' : 'glow-red'}" style="border-color: rgba(${isLong ? '34,197,94' : '239,68,68'}, 0.3)">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center gap-3">
+                                <span class="bg-${dirColor}-500/20 text-${dirColor}-400 px-3 py-1 rounded-full text-xs font-700 flex items-center gap-1">
+                                    <i data-lucide="${dirIcon}" class="w-3 h-3"></i>
+                                    ${s.direction}
+                                </span>
+                                <span class="text-xl font-800">${s.ticker}</span>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-xs text-slate-400">Convinzione</div>
+                                <div class="text-lg font-700 ${convPct >= 80 ? 'text-green-400' : convPct >= 65 ? 'text-yellow-400' : 'text-slate-300'}">${convPct}%</div>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-4 gap-3 mt-3 text-sm">
+                            <div>
+                                <div class="text-slate-500 text-xs">Entry</div>
+                                <div class="font-600">$${s.entry_price}</div>
+                            </div>
+                            <div>
+                                <div class="text-slate-500 text-xs">Stop Loss</div>
+                                <div class="font-600 text-red-400">$${s.stop_loss}</div>
+                            </div>
+                            <div>
+                                <div class="text-slate-500 text-xs">Take Profit</div>
+                                <div class="font-600 text-green-400">$${s.take_profit}</div>
+                            </div>
+                            <div>
+                                <div class="text-slate-500 text-xs">R:R</div>
+                                <div class="font-600 text-blue-400">${rrDisplay}</div>
+                            </div>
+                        </div>
+                        <div class="mt-3 flex items-center justify-between text-xs">
+                            <span class="text-slate-400">Leva: ${s.leverage || '1x'} | Size: EUR${s.position_size_eur} | ${s.timeframe || ''}</span>
+                        </div>
+                        <div class="mt-2 text-xs text-slate-400">${s.reasoning ? s.reasoning.substring(0, 200) + '...' : ''}</div>
+                        ${s.key_risk ? `<div class="mt-2 text-xs text-red-400/70">Rischio: ${s.key_risk}</div>` : ''}
+                    </div>`;
+            }
+            lucide.createIcons();
+        } catch(e) { console.error('Signals error:', e); }
+    }
+
+    // ---- Run Analysis ----
+    async function runAnalysis() {
+        const btn = document.getElementById('run-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<div class="loading-spinner"></div> Analisi in corso...';
+        btn.classList.add('opacity-70');
+
+        try {
+            await fetch(`${API}/api/analysis/run`, { method: 'POST' });
+            // Poll for completion
+            pollAnalysis();
+        } catch(e) {
+            btn.disabled = false;
+            btn.innerHTML = '<i data-lucide="play" class="w-4 h-4"></i> Avvia Analisi Swarm';
+            btn.classList.remove('opacity-70');
+            lucide.createIcons();
+        }
+    }
+
+    async function pollAnalysis() {
+        const btn = document.getElementById('run-btn');
+        try {
+            const r = await fetch(`${API}/api/status`);
+            const d = await r.json();
+            if (d.analysis_running) {
+                setTimeout(pollAnalysis, 5000);
+                return;
+            }
+            // Analysis done - reload data
+            await loadSignals();
+            await loadConsensus();
+            btn.disabled = false;
+            btn.innerHTML = '<i data-lucide="play" class="w-4 h-4"></i> Avvia Analisi Swarm';
+            btn.classList.remove('opacity-70');
+            lucide.createIcons();
+        } catch(e) {
+            setTimeout(pollAnalysis, 5000);
+        }
+    }
+
+    // ---- Consensus ----
+    async function loadConsensus() {
+        try {
+            const r = await fetch(`${API}/api/analysis/latest`);
+            const d = await r.json();
+            if (d.status === 'no_analysis') return;
+
+            const c = d.consensus || {};
+            const container = document.getElementById('consensus-container');
+
+            const stanceColors = {
+                'strongly_bullish': 'text-green-400',
+                'bullish': 'text-green-300',
+                'neutral': 'text-yellow-400',
+                'bearish': 'text-red-300',
+                'strongly_bearish': 'text-red-400',
+            };
+            const stanceLabels = {
+                'strongly_bullish': 'Molto Rialzista',
+                'bullish': 'Rialzista',
+                'neutral': 'Neutrale',
+                'bearish': 'Ribassista',
+                'strongly_bearish': 'Molto Ribassista',
+            };
+
+            const stance = c.consensus_stance || 'neutral';
+            const regimeConf = Math.round((c.regime_confidence || 0) * 100);
+
+            container.innerHTML = `
+                <div class="space-y-4">
+                    <div class="flex items-center gap-4">
+                        <div class="glass rounded-xl p-4 flex-1 text-center">
+                            <div class="text-xs text-slate-400 mb-1">Stance Consenso</div>
+                            <div class="text-2xl font-800 ${stanceColors[stance] || 'text-slate-300'}">${stanceLabels[stance] || stance}</div>
+                        </div>
+                        <div class="glass rounded-xl p-4 flex-1 text-center">
+                            <div class="text-xs text-slate-400 mb-1">Regime Mercato</div>
+                            <div class="text-2xl font-800 text-blue-400">${c.market_regime || '?'}</div>
+                        </div>
+                        <div class="glass rounded-xl p-4 flex-1 text-center">
+                            <div class="text-xs text-slate-400 mb-1">Confidenza</div>
+                            <div class="text-2xl font-800 text-purple-400">${regimeConf}%</div>
+                        </div>
+                    </div>
+                    ${c.executive_summary ? `<div class="glass rounded-xl p-4 text-sm text-slate-300 leading-relaxed">${c.executive_summary}</div>` : ''}
+                    ${c.top_risks ? `
+                    <div>
+                        <div class="text-sm font-600 text-red-400 mb-2">Rischi Principali:</div>
+                        <ul class="text-xs text-slate-400 space-y-1">
+                            ${c.top_risks.map(r => `<li class="flex items-start gap-2"><span class="text-red-400 mt-0.5">&#8226;</span>${r}</li>`).join('')}
+                        </ul>
+                    </div>` : ''}
+                    ${c.historical_parallel ? `
+                    <div class="glass rounded-xl p-3 text-xs text-slate-400">
+                        <span class="text-yellow-400 font-600">Parallelo Storico:</span> ${c.historical_parallel}
+                    </div>` : ''}
+                </div>`;
+
+            // Update allocation
+            if (c.portfolio_allocation) {
+                const alloc = c.portfolio_allocation;
+                const bars = document.getElementById('allocation-bars');
+                bars.innerHTML = `
+                    <div>
+                        <div class="flex justify-between text-xs mb-1"><span class="text-slate-400">Cash</span><span>${alloc.cash_pct || 0}%</span></div>
+                        <div class="w-full bg-slate-700 rounded-full h-2"><div class="bg-slate-400 h-2 rounded-full bar-fill" style="width:${alloc.cash_pct || 0}%"></div></div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs mb-1"><span class="text-green-400">Long</span><span>${alloc.long_pct || 0}%</span></div>
+                        <div class="w-full bg-slate-700 rounded-full h-2"><div class="bg-green-500 h-2 rounded-full bar-fill" style="width:${alloc.long_pct || 0}%"></div></div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs mb-1"><span class="text-red-400">Short</span><span>${alloc.short_pct || 0}%</span></div>
+                        <div class="w-full bg-slate-700 rounded-full h-2"><div class="bg-red-500 h-2 rounded-full bar-fill" style="width:${alloc.short_pct || 0}%"></div></div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs mb-1"><span class="text-yellow-400">Hedge</span><span>${alloc.hedge_pct || 0}%</span></div>
+                        <div class="w-full bg-slate-700 rounded-full h-2"><div class="bg-yellow-500 h-2 rounded-full bar-fill" style="width:${alloc.hedge_pct || 0}%"></div></div>
+                    </div>`;
+            }
+
+            // Agent views
+            if (d.initial_views) {
+                const agentsDiv = document.getElementById('agents-container');
+                agentsDiv.innerHTML = '';
+                for (const v of d.initial_views) {
+                    const stance = v.overall_stance || v.revised_stance || '?';
+                    const conf = Math.round((v.confidence || v.revised_confidence || 0) * 100);
+                    const stColor = stance.includes('bull') ? 'green' : stance.includes('bear') ? 'red' : 'yellow';
+                    agentsDiv.innerHTML += `
+                        <div class="flex items-center justify-between py-2 border-b border-slate-700/50 text-sm">
+                            <div>
+                                <div class="font-500 text-slate-200">${v.agent_name || '?'}</div>
+                                <div class="text-xs text-slate-500">${(v.agent_role || '').substring(0, 30)}</div>
+                            </div>
+                            <span class="text-${stColor}-400 text-xs font-600">${stance} (${conf}%)</span>
+                        </div>`;
+                }
+            }
+        } catch(e) { console.error('Consensus error:', e); }
+    }
+
+    // ---- News ----
+    async function loadNews() {
+        try {
+            const r = await fetch(`${API}/api/news`);
+            const d = await r.json();
+            const container = document.getElementById('news-container');
+            container.innerHTML = '';
+
+            for (const a of (d.articles || []).slice(0, 15)) {
+                container.innerHTML += `
+                    <a href="${a.url}" target="_blank" class="block p-3 rounded-lg hover:bg-slate-800/50 transition-colors">
+                        <div class="text-sm font-500 text-slate-200 leading-snug">${a.title}</div>
+                        <div class="flex items-center gap-2 mt-1 text-xs text-slate-500">
+                            <span>${a.source}</span>
+                            <span>&#8226;</span>
+                            <span>${new Date(a.published).toLocaleString('it-IT', {hour:'2-digit', minute:'2-digit', day:'2-digit', month:'short'})}</span>
+                        </div>
+                    </a>`;
+            }
+        } catch(e) { console.error('News error:', e); }
+    }
+
+    // ---- Chat ----
+    async function sendChat() {
+        const input = document.getElementById('chat-input');
+        const q = input.value.trim();
+        if (!q) return;
+
+        const msgs = document.getElementById('chat-messages');
+        msgs.innerHTML += `<div class="text-right"><span class="inline-block bg-blue-600/30 rounded-xl px-4 py-2 text-sm">${q}</span></div>`;
+        input.value = '';
+        msgs.innerHTML += `<div id="chat-loading" class="flex items-center gap-2 text-sm text-slate-400"><div class="loading-spinner"></div> Analisi in corso...</div>`;
+        msgs.scrollTop = msgs.scrollHeight;
+
+        try {
+            const r = await fetch(`${API}/api/chat`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({question: q})
+            });
+            const d = await r.json();
+            document.getElementById('chat-loading')?.remove();
+            msgs.innerHTML += `<div><span class="inline-block glass rounded-xl px-4 py-2 text-sm text-slate-200 leading-relaxed">${d.answer || d.error || 'Nessuna risposta'}</span></div>`;
+            msgs.scrollTop = msgs.scrollHeight;
+        } catch(e) {
+            document.getElementById('chat-loading')?.remove();
+            msgs.innerHTML += `<div class="text-red-400 text-sm">Errore di connessione</div>`;
+        }
+    }
+
+    // ---- Init ----
+    async function init() {
+        lucide.createIcons();
+        await Promise.all([loadMarket(), loadNews(), loadSignals(), loadConsensus()]);
+        // Auto-refresh
+        setInterval(loadMarket, 60000);
+        setInterval(loadNews, 300000);
+    }
+
+    init();
+    </script>
+</body>
+</html>
